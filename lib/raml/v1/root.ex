@@ -21,15 +21,29 @@ defmodule Ramoulade.Raml.V1.Root do
     :relative_uri
   ]
 
-  alias Ramoulade.Raml.Validations
+  def from_yaml(document, yaml) do
+    _ = validate!(document, yaml)
 
-  @type parse_result(t) :: t | {:error, String.t}
+    %__MODULE__{
+      title: yaml["title"],
+      description: yaml["description"]
+    }
+    |> add_version(document, yaml)
+    |> add_documentation(document, yaml)
+  end
 
-  @spec from_parsed_yaml(map) :: parse_result(%__MODULE__{})
-  def from_parsed_yaml(yaml) do
-    yaml
-    |> validate
-    |> new
+  def add_version(root, _document, yaml) do
+    if yaml["version"] do
+      Map.put(root, :version, Version.parse!("#{yaml["version"]}"))
+    else
+      root
+    end
+  end
+
+  def add_documentation(root, document, yaml) do
+    if yaml["documentation"] do
+      Map.put(root, :documentation, Ramoulade.Raml.V1.Documentation.from_yaml(yaml["documentation"], document))
+    end
   end
 
   def new(yaml) do
@@ -38,7 +52,7 @@ defmodule Ramoulade.Raml.V1.Root do
       media_type: yaml["mediaType"],
       description: yaml["description"],
       version: yaml["version"],
-      base_uri: Ramoulade.Raml.V1.BaseUri.from_parsed_yaml(yaml),
+      # base_uri: Ramoulade.Raml.V1.BaseUri.from_parsed_yaml(yaml),
       protocols: yaml["protocols"],
       media_type: yaml["mediaType"],
       documentation: yaml["documentation"],
@@ -48,9 +62,9 @@ defmodule Ramoulade.Raml.V1.Root do
     }
   end
 
-  def validate(yaml) do
-    yaml
-    |> Validations.mutually_exclusive("schemas", "types")
-    |> Validations.required("title")
+  def validate!(document, yaml) do
+    unless yaml["title"] do
+      Ramoulade.error!(document, "A RAML specification MUST have a top level title attribute.")
+    end
   end
 end

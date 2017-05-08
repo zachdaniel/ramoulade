@@ -1,13 +1,10 @@
 defmodule Ramoulade.Raml.V1.Documentation do
   defstruct [:title, :content]
 
-  alias Ramoulade.Raml.Validations
-
-  @spec from_parsed_yaml(map) :: Ramoulade.Raml.V1.Root.parse_result(%__MODULE__{})
-  def from_parsed_yaml(yaml) do
-    for doc_yaml <- Map.get(yaml, "documentation", []) do
+  def from_yaml(yaml, document) do
+    for doc_yaml <- yaml do
       doc_yaml
-      |> validate
+      |> validate(document)
       |> new
     end
   end
@@ -19,8 +16,15 @@ defmodule Ramoulade.Raml.V1.Documentation do
     }
   end
 
-  def validate(yaml) do
+  def validate(yaml, document) do
+    unless yaml["title"] do
+      Ramoulade.error!(document, "A documentation section MUST have a title attribute.")
+    end
+
+    unless yaml["content"] do
+      Ramoulade.error!(document, "A documentation section MUST have a content attribute.")
+    end
+
     yaml
-    |> Validations.required(["title", "content"])
   end
 end

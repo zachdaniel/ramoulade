@@ -1,8 +1,6 @@
 defmodule Ramoulade.Raml.V1.Properties do
   defstruct properties: %{}, required: []
 
-  alias Ramoulade.Raml.Validations
-
   def from_parsed_yaml(yaml) do
     yaml
     |> validate
@@ -14,10 +12,6 @@ defmodule Ramoulade.Raml.V1.Properties do
   end
 
   def validate(yaml) do
-    Enum.each(yaml, fn {_key, value} ->
-      Validations.required(value, "type")
-    end)
-
     yaml
   end
 

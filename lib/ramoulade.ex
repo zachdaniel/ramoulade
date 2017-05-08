@@ -8,31 +8,41 @@ defmodule Ramoulade do
   def parse_file(path) do
     Agent.start_link(fn -> [] end, name: @cr_agent)
     path
-    |> _parse_file
-    |> Ramoulade.Raml.V1.Parser.parse!
-    # |> Ramoulade.Raml.V1.Root.from_parsed_yaml()
+    |> _parse_file()
+    |> deep_to_map
+    |> Ramoulade.Raml.V1.RamlDocument.parse!(path)
   after
     Agent.stop(@cr_agent)
   end
 
-  @spec _parse_file(String.t) :: Ramoulade.Raml.V1.Root.parse_result
   def _parse_file(path) do
     with_path_context(path, fn absolute_path ->
-      document = :yamerl_constr.file(
+      :yamerl_constr.file(
         absolute_path,
-        detailed_constr: true,
+        detailed_constr: false,
         str_node_as_binary: true,
         node_mods: [Ramoulade.Raml.V1.IncludeTag]
       )
       |> List.last()
-
-      [{:yamerl_doc, absolute_path, elem(document, 1)}]
+      |> Ramoulade.Raml.V1.RamlDocument.pre_parse_validate!(absolute_path)
     end)
   end
 
-  @spec parse(String.t) :: Ramoulade.Raml.V1.Root.parse_result
   def parse(_text) do
     raise "Unimplemented."
+  end
+
+  def error!(document, errors) when is_list(errors) do
+    message =
+      errors
+      |> Enum.map(&"#{document.path}: #{&1}")
+      |> Enum.join("\n")
+
+    "\n\n" <> message <> "\n\n"
+  end
+
+  def error!(document, error) do
+    raise "\n\n#{document.path}: #{error}\n\n"
   end
 
   defp with_path_context(path, func) do
@@ -53,7 +63,6 @@ defmodule Ramoulade do
   end
 
   defp push_to_file_stack!(file_name) do
-    _ = ensure_circular_reference_agent()
     Agent.update(@cr_agent, fn files ->
       if file_name in files do
         raise "Circular Reference Detected on file #{file_name}. Files loaded: #{inspect(files)}."
@@ -67,6 +76,24 @@ defmodule Ramoulade do
     Agent.update(@cr_agent, &tl/1)
   end
 
-  defp ensure_circular_reference_agent() do
+  defp deep_to_map(yaml) when is_map(yaml) do
+    yaml
+    |> Map.to_list()
+    |> deep_to_map
   end
+
+  defp deep_to_map(yaml) when is_list(yaml) do
+    if Enum.all?(yaml, &is_tuple/1) do
+      yaml
+      |> Enum.map(&deep_to_map/1)
+      |> Enum.into(%{})
+    else
+      yaml
+      |> Enum.map(&deep_to_map/1)
+    end
+  end
+
+  defp deep_to_map({key, value}), do: {key, deep_to_map(value)}
+
+  defp deep_to_map(other), do: other
 end
