@@ -1,5 +1,5 @@
 defmodule Ramoulade.Raml.V1.RamlDocument do
-  defstruct [:version, :type, :path, :contents]
+  defstruct [:version, :type, :path, :contents, :document]
 
   def parse!(yaml, path) do
     identifier = identifier(path)
@@ -20,9 +20,10 @@ defmodule Ramoulade.Raml.V1.RamlDocument do
       end
     identifier = identifier(path)
 
-    if String.starts_with?(identifier, "#") do
+    if String.starts_with?(identifier, "#%RAML") do
       case identifier do
         "#%RAML 1.0" -> generic_document(yaml, path)
+        "#%RAML 1.0 ResourceType" -> raise "No resource type validator yet!"
         _ -> raise "No document validator for #{identifier} at #{path}."
       end
     else

@@ -1,18 +1,28 @@
 #%RAML 1.0
-title: Mandark
+title: Example
 # resourceTypes:
 #   collection: !include resource_types/collection.raml
-baseUri: /my_api
-version: 1.0.0
+baseUri: http://api.ramoulade.com/{version}/{object}
+version:
+  value: "1.0"
 baseUriParameters:
-  foobarName:
-    description: The name of the foobar
+  object:
+    description: The object that you want
     type: string
+    examples:
+      - ball
+      - box
+    displayName: special_string
+    enum: [ball, box, bar]
+    facets:
+      doIPlayWithIt?: boolean
+protocols: [HTTPS, HTTP]
 /products:
   type: collection
   description: All products
 documentation:
- - title: Home
+ - title:
+     value: Home
    content: |
      Welcome to the _Zencoder API_ Documentation. The _Zencoder API_
      allows you to connect your application to our encoding service

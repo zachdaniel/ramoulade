@@ -1,30 +1,18 @@
 defmodule Ramoulade.Raml.V1.Documentation do
   defstruct [:title, :content]
 
-  def from_yaml(yaml, document) do
+  alias Ramoulade.Raml.Common
+
+  def from_yaml(yaml, root) do
     for doc_yaml <- yaml do
-      doc_yaml
-      |> validate(document)
-      |> new
+      new(doc_yaml, root)
     end
   end
 
-  def new(yaml) do
+  def new(yaml, root) do
     %__MODULE__{
-      title: yaml["title"],
-      content: yaml["content"]
+      title: Common.get_required_scalar!(root.document, yaml, "title"),
+      content: Common.get_required_scalar!(root.document, yaml, "content")
     }
-  end
-
-  def validate(yaml, document) do
-    unless yaml["title"] do
-      Ramoulade.error!(document, "A documentation section MUST have a title attribute.")
-    end
-
-    unless yaml["content"] do
-      Ramoulade.error!(document, "A documentation section MUST have a content attribute.")
-    end
-
-    yaml
   end
 end
