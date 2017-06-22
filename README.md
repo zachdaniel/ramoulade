@@ -1,6 +1,6 @@
 # Ramoulade
 
-**TODO: Add description**
+This is abandoned, but may have some useful code for someone searching around looking for the as yet missing elixir raml integration.
 
 ## Installation
 
